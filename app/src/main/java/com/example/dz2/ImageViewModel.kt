@@ -16,11 +16,13 @@ class ImageViewModel(application: Application) : AndroidViewModel(application) {
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: LiveData<String?> get() = _errorMessage
 
-    fun loadImages(amount: Int) {
+    private var currentPage = 1
+
+    fun loadImages(amount: Int, page: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val response = RetrofitInstance.api.getImages(amount)
+                val response = RetrofitInstance.api.getImages(amount, page)
                 if (response.isSuccessful) {
                     val newImages = response.body()?.results ?: emptyList()
                     val currentImages = _images.value ?: emptyList()
@@ -44,4 +46,11 @@ class ImageViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun loadNextPage(amount: Int) {
+        loadImages(amount, currentPage)
+        currentPage++
+    }
 }
+
+

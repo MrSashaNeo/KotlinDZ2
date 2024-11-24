@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -14,11 +15,25 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.livedata.observeAsState
 import coil.compose.rememberImagePainter
+import coil.request.CachePolicy
+import kotlinx.coroutines.flow.filter
+import androidx.compose.foundation.lazy.LazyListState
+
+
 
 @Composable
 fun ImageListScreen(viewModel: ImageViewModel = viewModel(), modifier: Modifier = Modifier) {
     val images by viewModel.images.observeAsState(emptyList())
     val configuration = LocalConfiguration.current
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull() }
+            .filter { it != null && it.index == images.lastIndex }
+            .collect {
+                viewModel.loadNextPage(5) // Загружаем следующие 5 изображений
+            }
+    }
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -26,16 +41,16 @@ fun ImageListScreen(viewModel: ImageViewModel = viewModel(), modifier: Modifier 
         verticalArrangement = Arrangement.Top
     ) {
         Button(
-            onClick = { viewModel.loadImages(1) }, // Загрузка одного изображения при нажатии
+            onClick = { viewModel.loadImages(1, 1) }, // Загрузка первого изображения на первой странице
             modifier = Modifier.padding(16.dp)
         ) {
             Text("Загрузить новое изображение")
         }
 
         if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
-            ImageRow(images = images, viewModel = viewModel)
+            ImageRow(images = images, listState = listState, viewModel = viewModel)
         } else {
-            ImageList(images = images, viewModel = viewModel)
+            ImageList(images = images, listState = listState, viewModel = viewModel)
         }
     }
 }
@@ -54,8 +69,8 @@ fun ErrorView(message: String?, onRetry: () -> Unit) {
 }
 
 @Composable
-fun ImageList(images: List<NekosImageData>, viewModel: ImageViewModel) {
-    LazyColumn {
+fun ImageList(images: List<NekosImageData>, listState: LazyListState, viewModel: ImageViewModel) {
+    LazyColumn(state = listState) {
         items(images) { image ->
             ImageCard(image = image, viewModel = viewModel)
         }
@@ -63,8 +78,8 @@ fun ImageList(images: List<NekosImageData>, viewModel: ImageViewModel) {
 }
 
 @Composable
-fun ImageRow(images: List<NekosImageData>, viewModel: ImageViewModel) {
-    LazyRow {
+fun ImageRow(images: List<NekosImageData>, listState: LazyListState, viewModel: ImageViewModel) {
+    LazyRow(state = listState) {
         items(images) { image ->
             ImageCard(image = image, viewModel = viewModel)
         }
@@ -94,7 +109,8 @@ fun ImageCard(image: NekosImageData, viewModel: ImageViewModel) {
             .padding(8.dp)
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .aspectRatio(1.6f)
         ) {
             if (isLoading) {
@@ -102,11 +118,18 @@ fun ImageCard(image: NekosImageData, viewModel: ImageViewModel) {
             } else if (errorMessage != null) {
                 ErrorView(message = errorMessage) {
                     isLoading = true
-                    viewModel.loadImages(1)
+                    viewModel.loadImages(1, 1)
                 }
             } else {
                 Image(
-                    painter = rememberImagePainter(data = image.url),
+                    painter = rememberImagePainter(
+                        data = image.url,
+                        builder = {
+                            crossfade(true)
+                            diskCachePolicy(CachePolicy.ENABLED)
+                            memoryCachePolicy(CachePolicy.ENABLED)
+                        }
+                    ),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize()
                 )

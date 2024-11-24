@@ -7,10 +7,12 @@ import retrofit2.http.Query
 interface NekosApiService {
     @GET("neko")
     suspend fun getImages(
-        @Query("amount") amount: Int = 1
+        @Query("amount") amount: Int = 1,
+        @Query("page") page: Int
     ): Response<NekosApiResponse>
 }
 
 data class NekosApiResponse(
     val results: List<NekosImageData>
 )
+
