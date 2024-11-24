@@ -51,6 +51,10 @@ class ImageViewModel(application: Application) : AndroidViewModel(application) {
         loadImages(amount, currentPage)
         currentPage++
     }
+
+    fun retryLoadImages(amount: Int, page: Int) {
+        loadImages(amount, page)
+    }
 }
 
 

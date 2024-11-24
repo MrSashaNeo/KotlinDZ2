@@ -24,6 +24,8 @@ import androidx.compose.foundation.lazy.LazyListState
 @Composable
 fun ImageListScreen(viewModel: ImageViewModel = viewModel(), modifier: Modifier = Modifier) {
     val images by viewModel.images.observeAsState(emptyList())
+    val isLoading by viewModel.isLoading.observeAsState(false)
+    val errorMessage by viewModel.errorMessage.observeAsState(null)
     val configuration = LocalConfiguration.current
     val listState = rememberLazyListState()
 
@@ -31,7 +33,7 @@ fun ImageListScreen(viewModel: ImageViewModel = viewModel(), modifier: Modifier 
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull() }
             .filter { it != null && it.index == images.lastIndex }
             .collect {
-                viewModel.loadNextPage(5) // Загружаем следующие 5 изображений
+                viewModel.loadNextPage(3) // Загружаем следующие 5 изображений
             }
     }
 
@@ -44,13 +46,23 @@ fun ImageListScreen(viewModel: ImageViewModel = viewModel(), modifier: Modifier 
             onClick = { viewModel.loadImages(1, 1) }, // Загрузка первого изображения на первой странице
             modifier = Modifier.padding(16.dp)
         ) {
-            Text("Загрузить новое изображение")
+            Text("Начать загрузку анимэ-девочек")
         }
 
-        if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
-            ImageRow(images = images, listState = listState, viewModel = viewModel)
+        if (errorMessage != null) {
+            ErrorView(message = errorMessage) {
+                viewModel.retryLoadImages(1, 1)
+            }
         } else {
-            ImageList(images = images, listState = listState, viewModel = viewModel)
+            if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+                ImageRow(images = images, listState = listState, viewModel = viewModel)
+            } else {
+                ImageList(images = images, listState = listState, viewModel = viewModel)
+            }
+
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
         }
     }
 }
@@ -118,7 +130,7 @@ fun ImageCard(image: NekosImageData, viewModel: ImageViewModel) {
             } else if (errorMessage != null) {
                 ErrorView(message = errorMessage) {
                     isLoading = true
-                    viewModel.loadImages(1, 1)
+                    viewModel.retryLoadImages(1, 1)
                 }
             } else {
                 Image(
@@ -137,3 +149,4 @@ fun ImageCard(image: NekosImageData, viewModel: ImageViewModel) {
         }
     }
 }
+
