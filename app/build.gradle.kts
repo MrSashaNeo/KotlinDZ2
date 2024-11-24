@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.example.dz2"
-    compileSdk = 35  // Обновлено с 34 до 35
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.dz2"
         minSdk = 24
-        targetSdk = 35  // Обновлено с 34 до 35
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -68,6 +68,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.5.1")
     implementation("androidx.compose.runtime:runtime-livedata:1.5.1")
+
+    implementation("com.google.accompanist:accompanist-flowlayout:0.23.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
